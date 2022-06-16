@@ -1,5 +1,8 @@
 [package]
 name = "deevee"
+description = "Designated verifier signatures"
+repository = "https://github.com/cronokirby/deevee"
+license = "MIT"
 version = "0.2.0"
 edition = "2021"
 
