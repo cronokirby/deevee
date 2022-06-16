@@ -3,49 +3,58 @@ use curve25519_dalek::ristretto::RistrettoPoint;
 use curve25519_dalek::scalar::Scalar;
 use rand_core::{CryptoRng, RngCore};
 
-/// A Sigma protocol for proving knowledge of a discrete logarithm.
-///
-/// Specifically, this struct holds the state of the prover, and also has
-/// an associated method for the verifier.
-pub struct DLogProver {
-    /// The secret scalar we want to prove that we know.
-    x: Scalar,
-    /// The random nonce used for this proof.
-    k: Scalar,
+pub struct OrDLogProver {
+    x0: Scalar,
+    k0: Scalar,
+    fake_big_k1: RistrettoPoint,
+    fake_e1: Scalar,
+    fake_s1: Scalar,
 }
 
-impl DLogProver {
-    /// Create an instance of the prover.
-    ///
-    /// All of the randomness needed is created at this point.
-    pub fn create<R: RngCore + CryptoRng>(rng: &mut R, x: Scalar) -> Self {
-        let k = Scalar::random(rng);
-        Self { x, k }
+impl OrDLogProver {
+    pub fn create<R: RngCore + CryptoRng>(
+        rng: &mut R,
+        x0: Scalar,
+        big_x1: &RistrettoPoint,
+    ) -> Self {
+        let k0 = Scalar::random(rng);
+        let fake_e1 = Scalar::random(rng);
+        let fake_s1 = Scalar::random(rng);
+        let fake_big_k1 =
+            RistrettoPoint::vartime_double_scalar_mul_basepoint(&fake_e1, big_x1, &fake_s1);
+        Self {
+            x0,
+            k0,
+            fake_big_k1,
+            fake_e1,
+            fake_s1,
+        }
     }
 
-    /// Calculate the commitment to the nonce.
-    ///
-    /// This is the first move by the prover in the protocol.
-    pub fn commit(&self) -> RistrettoPoint {
-        &self.k * &RISTRETTO_BASEPOINT_TABLE
+    pub fn commit(&self) -> (RistrettoPoint, RistrettoPoint) {
+        let big_k0 = &self.k0 * &RISTRETTO_BASEPOINT_TABLE;
+        (big_k0, self.fake_big_k1)
     }
 
-    /// Respond to the challenge sent by the verifier.
-    ///
-    /// This is the second move by the prover in the protocol.
-    pub fn respond(&self, e: &Scalar) -> Scalar {
-        self.k - e * self.x
+    pub fn respond(&self, e: &Scalar) -> ((Scalar, Scalar), (Scalar, Scalar)) {
+        let e0 = e - self.fake_e1;
+        let s0 = self.k0 - e0 * self.x0;
+        ((e0, self.fake_e1), (s0, self.fake_s1))
     }
 
-    /// Verify that a prover knows the discrete logarithm of `bigX`.
-    ///
-    /// Or, at least, verify that this is a valid transcript.
     pub fn verify(
-        bigX: &RistrettoPoint,
-        bigK: &RistrettoPoint,
-        e: &Scalar,
-        response: &Scalar,
+        big_x: (&RistrettoPoint, &RistrettoPoint),
+        big_k: (&RistrettoPoint, &RistrettoPoint),
+        expected_e: &Scalar,
+        e: (&Scalar, &Scalar),
+        s: (&Scalar, &Scalar),
     ) -> bool {
-        bigK == &RistrettoPoint::vartime_double_scalar_mul_basepoint(e, bigX, response)
+        let e_ok = e.0 + e.1 == *expected_e;
+        let k0_ok =
+            big_k.0 == &RistrettoPoint::vartime_double_scalar_mul_basepoint(e.0, big_x.0, s.0);
+        let k1_ok =
+            big_k.1 == &RistrettoPoint::vartime_double_scalar_mul_basepoint(e.1, big_x.1, s.1);
+
+        e_ok && k0_ok && k1_ok
     }
 }
