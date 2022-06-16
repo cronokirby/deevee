@@ -1,3 +1,4 @@
+use curve25519_dalek::constants::RISTRETTO_BASEPOINT_TABLE;
 use curve25519_dalek::ristretto::RistrettoPoint;
 use curve25519_dalek::scalar::Scalar;
 use rand_core::{CryptoRng, RngCore};
@@ -18,21 +19,22 @@ impl DLogProver {
     ///
     /// All of the randomness needed is created at this point.
     pub fn create<R: RngCore + CryptoRng>(rng: &mut R, x: Scalar) -> Self {
-        todo!()
+        let k = Scalar::random(rng);
+        Self { x, k }
     }
 
     /// Calculate the commitment to the nonce.
     ///
     /// This is the first move by the prover in the protocol.
     pub fn commit(&self) -> RistrettoPoint {
-        todo!()
+        &self.k * &RISTRETTO_BASEPOINT_TABLE
     }
 
     /// Respond to the challenge sent by the verifier.
     ///
     /// This is the second move by the prover in the protocol.
     pub fn respond(&self, e: &Scalar) -> Scalar {
-        todo!()
+        self.k - e * self.x
     }
 
     /// Verify that a prover knows the discrete logarithm of `bigX`.
@@ -44,6 +46,6 @@ impl DLogProver {
         e: &Scalar,
         response: &Scalar,
     ) -> bool {
-        todo!()
+        bigK == &RistrettoPoint::vartime_double_scalar_mul_basepoint(e, bigX, response)
     }
 }
