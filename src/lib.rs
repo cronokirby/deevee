@@ -1,3 +1,5 @@
+mod sigma;
+
 #[cfg(test)]
 mod tests {
     #[test]
