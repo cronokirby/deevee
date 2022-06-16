@@ -63,13 +63,17 @@ fn challenge(
     hasher.update(big_k0.as_bytes());
     hasher.update(big_k1.as_bytes());
     hasher.update(m);
-    let public_challenge = Scalar::from_bytes_mod_order_wide(&hasher.finalize().into());
+    let mut challenge = hasher.finalize();
 
     let mut hasher = Sha512::new_with_prefix(CHALLENGE_SECRET_CONTEXT);
     hasher.update(dh_result.as_bytes());
-    let secret_challenge = Scalar::from_bytes_mod_order_wide(&hasher.finalize().into());
+    let secret_challenge = hasher.finalize();
 
-    public_challenge + secret_challenge
+    for (c_i, s_i) in challenge.iter_mut().zip(secret_challenge.iter()) {
+        *c_i ^= s_i;
+    }
+
+    Scalar::from_bytes_mod_order_wide(&challenge.into())
 }
 
 struct RawSignature {
