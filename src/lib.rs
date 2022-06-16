@@ -1,3 +1,34 @@
+//! This crate provides an implementation of designated verifier signatures.
+//! This is like a normal signature scheme, except that the signer also
+//! designates a verifier for their signature.
+//!
+//! Only this verifier can validate the signature. Furthermore, this verifier
+//! can't convince anyone else of the validity of the signature, because they
+//! can forge signatures which designate them as the verifier.
+//!
+//! Here's an example which illustrates all of this functionality:
+//!
+//! ```rust
+//! use deevee::*;
+//! use rand_core::OsRng;
+//!
+//! let (privA, pubA) = generate_keypair(&mut OsRng);
+//! let (privB, pubB) = generate_keypair(&mut OsRng);
+//! let (privC, pubC) = generate_keypair(&mut OsRng);
+//!
+//! let sig = privA.sign(&mut OsRng, &pubB, b"I like cats");
+//! // The signature verifies, because the designee matches
+//! assert!(privB.verify(&pubA, b"I like cats", &sig));
+//! // If we change the message, verification fails
+//! assert!(!privB.verify(&pubA, b"I don't like cats", &sig));
+//! // The signer won't verify with a different signer either
+//! assert!(!privB.verify(&pubC, b"I like cats", &sig));
+//! // The wrong verifier can't validate the signature either
+//! assert!(!privC.verify(&pubA, b"I like cats", &sig));
+//! // Finally, the verifier can forge a valid signature for themselves
+//! let forged = privB.forge(&mut OsRng, &pubA, b"I don't like cats");
+//! assert!(privB.verify(&pubA, b"I don't like cats", &forged));
+//! ```
 mod sigma;
 
 use curve25519_dalek::constants;
@@ -232,7 +263,7 @@ impl PrivateKey {
     /// Verify that a signer's signature on a message is valid.
     ///
     /// You must have been designated the verifier for this to work.
-    pub fn verify(&self, signer: &PublicKey, message: &[u8], signature: Signature) -> bool {
+    pub fn verify(&self, signer: &PublicKey, message: &[u8], signature: &Signature) -> bool {
         let raw_sig = match signature.as_raw() {
             None => return false,
             Some(s) => s,
