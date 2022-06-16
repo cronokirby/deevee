@@ -4,11 +4,11 @@ use curve25519_dalek::scalar::Scalar;
 use rand_core::{CryptoRng, RngCore};
 
 /// A sigma protocol for proving knowledge of one of two discrete logarithms.
-/// 
+///
 /// The idea is that there's two public points `big_x0`, and `big_x1`, and you
 /// want to prove that you know either `x0` such that `x0 * G = big_x0` or
 /// `x1` such that `x1 * G = big_x1`.
-/// 
+///
 /// In practice this struct, for the prover side, always works as if you know
 /// `x0`. To prove the other side, you instead need to swap the arguments and
 /// results of the methods.
@@ -25,7 +25,7 @@ pub struct OrDLogProver {
 
 impl OrDLogProver {
     /// Create a new instance of the prover.
-    /// 
+    ///
     /// We use the discrete logarithm we know, and the point where we don't.
     pub fn create<R: RngCore + CryptoRng>(
         rng: &mut R,
@@ -48,7 +48,7 @@ impl OrDLogProver {
     }
 
     /// Calculate the commitment, or first message of the sigma protocol.
-    /// 
+    ///
     /// The tuple should be flipped if we know the second point instead.
     pub fn commit(&self) -> (RistrettoPoint, RistrettoPoint) {
         let big_k0 = &self.k0 * &RISTRETTO_BASEPOINT_TABLE;
@@ -56,7 +56,7 @@ impl OrDLogProver {
     }
 
     /// Calculate the response to the challenge.
-    /// 
+    ///
     /// The two response tuples should be flipped if we know the second point instead.
     pub fn respond(&self, e: &Scalar) -> ((Scalar, Scalar), (Scalar, Scalar)) {
         let e0 = e - self.fake_e1;
@@ -64,19 +64,14 @@ impl OrDLogProver {
         ((e0, self.fake_e1), (s0, self.fake_s1))
     }
 
-    pub fn verify(
+    /// Recompute the nonce commitments given the response, and the two public points.
+    pub fn recompute(
         big_x: (&RistrettoPoint, &RistrettoPoint),
-        big_k: (&RistrettoPoint, &RistrettoPoint),
-        expected_e: &Scalar,
         e: (&Scalar, &Scalar),
         s: (&Scalar, &Scalar),
-    ) -> bool {
-        let e_ok = e.0 + e.1 == *expected_e;
-        let k0_ok =
-            big_k.0 == &RistrettoPoint::vartime_double_scalar_mul_basepoint(e.0, big_x.0, s.0);
-        let k1_ok =
-            big_k.1 == &RistrettoPoint::vartime_double_scalar_mul_basepoint(e.1, big_x.1, s.1);
-
-        e_ok && k0_ok && k1_ok
+    ) -> (RistrettoPoint, RistrettoPoint) {
+        let big_k0 = RistrettoPoint::vartime_double_scalar_mul_basepoint(e.0, big_x.0, s.0);
+        let big_k1 = RistrettoPoint::vartime_double_scalar_mul_basepoint(e.1, big_x.1, s.1);
+        (big_k0, big_k1)
     }
 }
