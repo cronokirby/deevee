@@ -119,3 +119,122 @@ fn raw_verify(big_x0: &RistrettoPoint, x1: &Scalar, sig: &RawSignature, m: &[u8]
     );
     e == sig.e
 }
+
+/// The length of signatures, in bytes.
+const SIGNATURE_LENGTH: usize = 128;
+
+/// Represents a signature designated for a specific verifier.
+///
+/// Only that verifier can check that this signature is valid, and that verifier
+/// can in fact forge valid signatures which designate them as the verifier.
+#[derive(Clone, Copy, Debug)]
+struct Signature {
+    data: [u8; SIGNATURE_LENGTH],
+}
+
+impl Signature {
+    fn from_raw(raw: &RawSignature) -> Self {
+        let mut data = [0u8; SIGNATURE_LENGTH];
+        data[0..32].copy_from_slice(raw.e.as_bytes());
+        data[32..64].copy_from_slice(raw.e0.as_bytes());
+        data[64..96].copy_from_slice(raw.s0.as_bytes());
+        data[96..128].copy_from_slice(raw.s1.as_bytes());
+
+        Self::new(data)
+    }
+
+    fn as_raw(&self) -> Option<RawSignature> {
+        let e = Scalar::from_canonical_bytes(self.data[0..32].try_into().unwrap())?;
+        let e0 = Scalar::from_canonical_bytes(self.data[32..64].try_into().unwrap())?;
+        let s0 = Scalar::from_canonical_bytes(self.data[64..96].try_into().unwrap())?;
+        let s1 = Scalar::from_canonical_bytes(self.data[96..128].try_into().unwrap())?;
+
+        Some(RawSignature { e, e0, s0, s1 })
+    }
+
+    /// Create a Signature from raw bytes.
+    pub fn new(data: [u8; SIGNATURE_LENGTH]) -> Self {
+        Self { data }
+    }
+
+    /// Convert a signature to the raw bytes which make up that signature.
+    pub fn to_bytes(&self) -> [u8; SIGNATURE_LENGTH] {
+        self.data
+    }
+}
+
+/// PublicKey represents an identity.
+///
+/// This identity is used to represent the person designated to verify a signature,
+/// or the person that signed a message.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct PublicKey(RistrettoPoint);
+
+impl PublicKey {
+    /// Attempt to create a PublicKey from bytes.
+    ///
+    /// This can fail if this public key is not valid.
+    pub fn from_bytes(data: [u8; 32]) -> Option<Self> {
+        todo!()
+    }
+
+    /// Marshall this PublicKey into bytes.
+    pub fn to_bytes(&self) -> [u8; 32] {
+        todo!()
+    }
+}
+
+/// Represents a private key.
+///
+/// The private key allows creating designated verifier signatures. These
+/// signatures require the private key of that verifier to be validated.
+/// Furthermore, the verifier can use their private key to forge valid signatures
+/// which designate them.
+#[derive(Clone, Copy, PartialEq)]
+pub struct PrivateKey(Scalar);
+
+impl PrivateKey {
+    /// Attempt to unmarshall bytes into a private key.
+    ///
+    /// This can fail if the bytes don't represent a valid private key.
+    pub fn from_bytes(data: [u8; 32]) -> Option<Self> {
+        todo!()
+    }
+
+    /// Marshall this private key into bytes.
+    pub fn to_bytes(&self) -> [u8; 32] {
+        todo!()
+    }
+
+    /// Sign a message, designated to a specific verifier.
+    pub fn sign<R: RngCore + CryptoRng>(
+        &self,
+        rng: &mut R,
+        designee: &PublicKey,
+        message: &[u8],
+    ) -> Signature {
+        todo!()
+    }
+
+    /// As a verifier, forge a message from a signer, designated to yourself.
+    pub fn forge<R: RngCore + CryptoRng>(
+        &self,
+        rng: &mut R,
+        signer: &PublicKey,
+        message: &[u8],
+    ) -> Signature {
+        todo!()
+    }
+
+    /// Verify that a signer's signature on a message is valid.
+    ///
+    /// You must have been designated the verifier for this to work.
+    pub fn verify(&self, signer: &PublicKey, message: &[u8], signature: Signature) -> bool {
+        todo!()
+    }
+}
+
+/// Generate a new private key, along with its associated public key.
+pub fn generate_keypair<R: RngCore + CryptoRng>(rng: &mut R) -> (PrivateKey, PublicKey) {
+    todo!()
+}
