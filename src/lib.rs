@@ -128,7 +128,7 @@ const SIGNATURE_LENGTH: usize = 128;
 /// Only that verifier can check that this signature is valid, and that verifier
 /// can in fact forge valid signatures which designate them as the verifier.
 #[derive(Clone, Copy, Debug)]
-struct Signature {
+pub struct Signature {
     data: [u8; SIGNATURE_LENGTH],
 }
 
@@ -175,12 +175,12 @@ impl PublicKey {
     ///
     /// This can fail if this public key is not valid.
     pub fn from_bytes(data: [u8; 32]) -> Option<Self> {
-        todo!()
+        Some(Self(CompressedRistretto(data).decompress()?))
     }
 
     /// Marshall this PublicKey into bytes.
     pub fn to_bytes(&self) -> [u8; 32] {
-        todo!()
+        self.0.compress().0
     }
 }
 
@@ -198,12 +198,13 @@ impl PrivateKey {
     ///
     /// This can fail if the bytes don't represent a valid private key.
     pub fn from_bytes(data: [u8; 32]) -> Option<Self> {
-        todo!()
+        let scalar = Scalar::from_canonical_bytes(data)?;
+        Some(Self(scalar))
     }
 
     /// Marshall this private key into bytes.
     pub fn to_bytes(&self) -> [u8; 32] {
-        todo!()
+        self.0.to_bytes()
     }
 
     /// Sign a message, designated to a specific verifier.
@@ -213,7 +214,8 @@ impl PrivateKey {
         designee: &PublicKey,
         message: &[u8],
     ) -> Signature {
-        todo!()
+        let raw = raw_sign(rng, &self.0, &designee.0, message);
+        Signature::from_raw(&raw)
     }
 
     /// As a verifier, forge a message from a signer, designated to yourself.
@@ -223,18 +225,27 @@ impl PrivateKey {
         signer: &PublicKey,
         message: &[u8],
     ) -> Signature {
-        todo!()
+        let raw = raw_forge(rng, &self.0, &signer.0, message);
+        Signature::from_raw(&raw)
     }
 
     /// Verify that a signer's signature on a message is valid.
     ///
     /// You must have been designated the verifier for this to work.
     pub fn verify(&self, signer: &PublicKey, message: &[u8], signature: Signature) -> bool {
-        todo!()
+        let raw_sig = match signature.as_raw() {
+            None => return false,
+            Some(s) => s,
+        };
+        raw_verify(&signer.0, &self.0, &raw_sig, message)
     }
 }
 
 /// Generate a new private key, along with its associated public key.
 pub fn generate_keypair<R: RngCore + CryptoRng>(rng: &mut R) -> (PrivateKey, PublicKey) {
-    todo!()
+    let scalar = Scalar::random(rng);
+    (
+        PrivateKey(scalar),
+        PublicKey(&scalar * &constants::RISTRETTO_BASEPOINT_TABLE),
+    )
 }
