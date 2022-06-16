@@ -12,9 +12,9 @@ use rand_core::{CryptoRng, RngCore};
 /// In practice this struct, for the prover side, always works as if you know
 /// `x0`. To prove the other side, you instead need to swap the arguments and
 /// results of the methods.
-pub struct OrDLogProver {
+pub struct OrDLogProver<'a> {
     /// The discrete logarithm we know.
-    x0: Scalar,
+    x0: &'a Scalar,
     /// The random nonce we use.
     k0: Scalar,
     /// We simulate a transcript for the discrete logarithm we don't know.
@@ -23,13 +23,13 @@ pub struct OrDLogProver {
     fake_s1: Scalar,
 }
 
-impl OrDLogProver {
+impl <'a> OrDLogProver<'a> {
     /// Create a new instance of the prover.
     ///
     /// We use the discrete logarithm we know, and the point where we don't.
     pub fn create<R: RngCore + CryptoRng>(
         rng: &mut R,
-        x0: Scalar,
+        x0: &'a Scalar,
         big_x1: &RistrettoPoint,
     ) -> Self {
         let k0 = Scalar::random(rng);
