@@ -116,18 +116,12 @@ In order to avoid length extension problems, since
 the exchange is secret, I calculate the hash as:
 
 $$
-\text{SHA-512}(\text{ctx}_A|| X_0 || X_1 || K_0 || K_1 || m) \oplus
-\text{SHA-512}(\text{ctx}_B || \text{DH}(X_0, X_1))
+\text{HMAC-SHA-512}(\text{DH}(X_0, X_1), \text{ctx}_A|| X_0 || X_1 || K_0 || K_1 || m) 
 $$
 
-Where $\text{ctx}_A$ is the
-string `deevee public challenge context 2022-06-16` and
-$\text{ctx}_B$ is the string `deevee secret challenge context 2022-06-16`.
+Where $\text{ctx}$ is the
+string `deevee challenge context 2022-06-17`.
 
-By doing two separate hashes, and xoring the results together,
-you include both the secret and public derived hashes,
-while avoiding any length extension issues stemming from
-the fact that the message has a variable length.
-
-Doing an xor is also better than doing a scalar addition, because you avoid
-malleability of any kind from that source.
+Using an HMAC avoids any issues with length extensions. An additional
+step for "best practices" would be to do a KDF on the DH result
+before using it as an HMAC key, but this doesn't seem to be necessary.

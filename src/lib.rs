@@ -34,12 +34,12 @@ mod sigma;
 use curve25519_dalek::constants;
 use curve25519_dalek::ristretto::{CompressedRistretto, RistrettoPoint};
 use curve25519_dalek::scalar::Scalar;
+use hmac::{Hmac, Mac};
 use rand_core::{CryptoRng, RngCore};
-use sha2::{Digest, Sha512};
+use sha2::Sha512;
 use sigma::OrDLogProver;
 
-const CHALLENGE_PUBLIC_CONTEXT: &[u8] = b"deevee public challenge context 2022-06-16";
-const CHALLENGE_SECRET_CONTEXT: &[u8] = b"deevee secret challenge context 2022-06-16";
+const CHALLENGE_CONTEXT: &[u8] = b"deevee challenge context 2022-06-17";
 
 /// Generate the challenge for the signature.
 ///
@@ -57,23 +57,16 @@ fn challenge(
     // extension attacks we hash the dh_result separately, and then add the two
     // scalars together to get our challenge.
 
-    let mut hasher = Sha512::new_with_prefix(CHALLENGE_PUBLIC_CONTEXT);
-    hasher.update(big_x0.as_bytes());
-    hasher.update(big_x1.as_bytes());
-    hasher.update(big_k0.as_bytes());
-    hasher.update(big_k1.as_bytes());
-    hasher.update(m);
-    let mut challenge = hasher.finalize();
+    let mut hmac = Hmac::<Sha512>::new_from_slice(dh_result.as_bytes()).unwrap();
 
-    let mut hasher = Sha512::new_with_prefix(CHALLENGE_SECRET_CONTEXT);
-    hasher.update(dh_result.as_bytes());
-    let secret_challenge = hasher.finalize();
+    hmac.update(CHALLENGE_CONTEXT);
+    hmac.update(big_x0.as_bytes());
+    hmac.update(big_x1.as_bytes());
+    hmac.update(big_k0.as_bytes());
+    hmac.update(big_k1.as_bytes());
+    hmac.update(m);
 
-    for (c_i, s_i) in challenge.iter_mut().zip(secret_challenge.iter()) {
-        *c_i ^= s_i;
-    }
-
-    Scalar::from_bytes_mod_order_wide(&challenge.into())
+    Scalar::from_bytes_mod_order_wide(&hmac.finalize().into_bytes().into())
 }
 
 struct RawSignature {
