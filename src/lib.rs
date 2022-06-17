@@ -38,8 +38,8 @@ use rand_core::{CryptoRng, RngCore};
 use sha2::{Digest, Sha512};
 use sigma::OrDLogProver;
 
-const CHALLENGE_PUBLIC_CONTEXT: &'static [u8] = b"deevee public challenge context 2022-06-16";
-const CHALLENGE_SECRET_CONTEXT: &'static [u8] = b"deevee secret challenge context 2022-06-16";
+const CHALLENGE_PUBLIC_CONTEXT: &[u8] = b"deevee public challenge context 2022-06-16";
+const CHALLENGE_SECRET_CONTEXT: &[u8] = b"deevee secret challenge context 2022-06-16";
 
 /// Generate the challenge for the signature.
 ///
