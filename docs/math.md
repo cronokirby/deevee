@@ -116,7 +116,7 @@ In order to avoid length extension problems, since
 the exchange is secret, I calculate the hash as:
 
 $$
-\text{HMAC-SHA-512}(\text{DH}(X_0, X_1), \text{ctx}_A|| X_0 || X_1 || K_0 || K_1 || m) 
+\text{HMAC-SHA-512}(\text{DH}(X_0, X_1), \text{ctx} || X_0 || X_1 || K_0 || K_1 || m) 
 $$
 
 Where $\text{ctx}$ is the
