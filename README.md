@@ -12,7 +12,7 @@ These are like normal signatures, except that the signer also designates
 a special verifier when signing a message. This changes two things about the
 resulting signature:
 
-1. The signature can only be verified by that verifier. Other verifiers will see the signature as invalid, and will in fact not even be able to tell whether or not the signature is valid even if they no who the verifier is (so long as they don't know that verifier's private key, or that of the signer).
+1. The signature can only be verified by that verifier. Other verifiers will see the signature as invalid, and will in fact not even be able to tell whether or not the signature is valid even if they know who the verifier is (so long as they don't know that verifier's private key, or that of the signer).
 2. The verifier can forge signatures that designate them. This prevents a verifier from convincing anybody else that the signature is valid, because the verifier could have forged that signature.
 
 This can be useful in situations where you need to sign a piece of data
